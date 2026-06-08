@@ -1,0 +1,3 @@
+aztfexport resource-group -provider-name=azurerm --hcl-only --non-interactive azrg-06052025b
+
+aztfexport resource -provider-name=azurerm --hcl-only --non-interactive @C:\GitHub.com\az-tf-export-demo\commands\resources-to-be-exported.txt
