@@ -8,24 +8,33 @@ locals {
   caf_base = lower(join("-", [var.workload_name, var.environment, var.location_short, var.instance]))
 
   caf_name = {
-    rg                           = "rg-${local.caf_base}"
-    vnet                         = "vnet-${local.caf_base}"
-    subnet_integration           = "snet-int-${local.caf_base}"
-    subnet_private_endpoints     = "snet-pep-${local.caf_base}"
-    private_dns_vnet_link        = "vnetlnk-appsvc-${local.caf_base}"
-    cosmos_private_dns_vnet_link = "vnetlnk-cosmos-${local.caf_base}"
-    ai_account                   = "ais-${local.caf_base}"
-    ai_project                   = "aip-${local.caf_base}"
-    ai_deployment                = "aidep-gpt52-${var.environment}"
-    frontend_web_app             = "appfe-${local.caf_base}"
-    backend_web_app              = "appbe-${local.caf_base}"
-    backend_private_endpoint     = "pep-appbe-${local.caf_base}"
-    private_dns_zone_group       = "pdzg-appsvc-${local.caf_base}"
-    private_service_connection   = "psc-appbe-${local.caf_base}"
-    storaccount                  = substr(replace("st${local.caf_base}", "-", ""), 0, 24)
-    cosmos_account               = "cosmos-${local.caf_base}"
-    speech_account               = "speech-${local.caf_base}"
-    search_service               = "srch-${local.caf_base}"
+    rg                                = "rg-${local.caf_base}"
+    vnet                              = "vnet-${local.caf_base}"
+    subnet_integration                = "snet-int-${local.caf_base}"
+    subnet_private_endpoints          = "snet-pep-${local.caf_base}"
+    private_dns_vnet_link             = "vnetlnk-appsvc-${local.caf_base}"
+    cosmos_private_dns_vnet_link      = "vnetlnk-cosmos-${local.caf_base}"
+    ai_account                        = "ais-${local.caf_base}"
+    ai_project                        = "aip-${local.caf_base}"
+    ai_deployment                     = "aidep-gpt52-${var.environment}"
+    frontend_web_app                  = "appfe-${local.caf_base}"
+    backend_web_app                   = "appbe-${local.caf_base}"
+    backend_private_endpoint          = "pep-appbe-${local.caf_base}"
+    storage_private_endpoint          = "pep-st-${local.caf_base}"
+    foundry_private_endpoint          = "pep-ais-${local.caf_base}"
+    search_private_endpoint           = "pep-srch-${local.caf_base}"
+    speech_private_endpoint           = "pep-speech-${local.caf_base}"
+    appservice_private_dns_zone_group = "pdzg-appsvc-${local.caf_base}"
+    foundry_private_dns_zone_group    = "pdzg-ais-${local.caf_base}"
+    search_private_dns_zone_group     = "pdzg-srch-${local.caf_base}"
+    speech_private_dns_zone_group     = "pdzg-speech-${local.caf_base}"
+    storage_private_dns_zone_group    = "pdzg-stblob-${local.caf_base}"
+    cosmos_private_dns_zone_group     = "pdzg-cosmos-${local.caf_base}"
+    private_service_connection        = "psc-appbe-${local.caf_base}"
+    storaccount                       = substr(replace("st${local.caf_base}", "-", ""), 0, 24)
+    cosmos_account                    = "cosmos-${local.caf_base}"
+    speech_account                    = "speech-${local.caf_base}"
+    search_service                    = "srch-${local.caf_base}"
   }
 }
 
@@ -71,18 +80,72 @@ resource "azurerm_subnet" "endpointsubnet" {
 }
 
 
+# Azure Private DNS Zones and Links for App Services
 resource "azurerm_private_dns_zone" "appservice_dns" {
   name                = "privatelink.azurewebsites.net"
   resource_group_name = azurerm_resource_group.az_rg.name
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "dns_link" {
+
+resource "azurerm_private_dns_zone_virtual_network_link" "app_service_dns_link" {
   name                  = local.caf_name.private_dns_vnet_link
   resource_group_name   = azurerm_resource_group.az_rg.name
   private_dns_zone_name = azurerm_private_dns_zone.appservice_dns.name
   virtual_network_id    = azurerm_virtual_network.vnet.id
 }
 
+# DNS Zone for Azure Cognitive Services private endpoint
+resource "azurerm_private_dns_zone" "cognitive_dns" {
+  name                = "privatelink.cognitiveservices.azure.com"
+  resource_group_name = azurerm_resource_group.az_rg.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "cognitive_dns_link" {
+  name                  = "vnetlnk-cog-${local.caf_base}"
+  resource_group_name   = azurerm_resource_group.az_rg.name
+  private_dns_zone_name = azurerm_private_dns_zone.cognitive_dns.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+}
+
+# DNS Zone for Azure Search private endpoint 
+resource "azurerm_private_dns_zone" "search_dns" {
+  name                = "privatelink.search.windows.net"
+  resource_group_name = azurerm_resource_group.az_rg.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "search_dns_link" {
+  name                  = "vnetlnk-srch-${local.caf_base}"
+  resource_group_name   = azurerm_resource_group.az_rg.name
+  private_dns_zone_name = azurerm_private_dns_zone.search_dns.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+}
+
+# DNS Zone for Storage Account private endpoints 
+resource "azurerm_private_dns_zone" "storage_blob_dns" {
+  name                = "privatelink.blob.core.windows.net"
+  resource_group_name = azurerm_resource_group.az_rg.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "storage_blob_dns_link" {
+  name                  = "vnetlnk-stblob-${local.caf_base}"
+  resource_group_name   = azurerm_resource_group.az_rg.name
+  private_dns_zone_name = azurerm_private_dns_zone.storage_blob_dns.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+}
+
+
+# DNS Zone for Cosmos DB private endpoint Document API 
+resource "azurerm_private_dns_zone" "dns_zone" {
+  name                = "privatelink.documents.azure.com"
+  resource_group_name = azurerm_resource_group.az_rg.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "cosmos_dns_link_2" {
+  name                  = local.caf_name.cosmos_private_dns_vnet_link
+  resource_group_name   = azurerm_resource_group.az_rg.name
+  private_dns_zone_name = azurerm_private_dns_zone.dns_zone.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+}
 ############################################################################################################################################################################
 ## Azure OpenAI Foundry Resources
 resource "azurerm_cognitive_account" "foundry_account" {
@@ -134,6 +197,25 @@ resource "azurerm_cognitive_deployment" "gpt52_ptu" {
   }
 }
 
+resource "azurerm_private_endpoint" "foundry_pe" {
+  name                = local.caf_name.foundry_private_endpoint
+  location            = azurerm_resource_group.az_rg.location
+  resource_group_name = azurerm_resource_group.az_rg.name
+  subnet_id           = azurerm_subnet.endpointsubnet.id
+
+  private_service_connection {
+    name                           = "psc-ais-${local.caf_base}"
+    private_connection_resource_id = azurerm_cognitive_account.foundry_account.id
+    subresource_names              = ["account"]
+    is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = local.caf_name.foundry_private_dns_zone_group
+    private_dns_zone_ids = [azurerm_private_dns_zone.cognitive_dns.id]
+  }
+}
+
 ############################################################################################################################################################################
 ##Azure App Service for Frontend and Backend
 
@@ -181,8 +263,8 @@ resource "azurerm_private_endpoint" "privateendpoint" {
   subnet_id           = azurerm_subnet.endpointsubnet.id
 
   private_dns_zone_group {
-    name                 = local.caf_name.private_dns_zone_group
-    private_dns_zone_ids = [azurerm_private_dns_zone.dns_zone.id]
+    name                 = local.caf_name.appservice_private_dns_zone_group
+    private_dns_zone_ids = [azurerm_private_dns_zone.appservice_dns.id]
   }
 
   private_service_connection {
@@ -210,7 +292,7 @@ resource "azurerm_storage_account" "example" {
 
 
 resource "azurerm_private_endpoint" "example" {
-  name                = local.caf_name.backend_private_endpoint
+  name                = local.caf_name.storage_private_endpoint
   location            = azurerm_resource_group.az_rg.location
   resource_group_name = azurerm_resource_group.az_rg.name
   subnet_id           = azurerm_subnet.endpointsubnet.id
@@ -224,8 +306,8 @@ resource "azurerm_private_endpoint" "example" {
 
   # Link to a Private DNS Zone for proper resolution
   private_dns_zone_group {
-    name                 = local.caf_name.private_dns_zone_group
-    private_dns_zone_ids = [azurerm_private_dns_zone.appservice_dns.id]
+    name                 = local.caf_name.storage_private_dns_zone_group
+    private_dns_zone_ids = [azurerm_private_dns_zone.storage_blob_dns.id]
   }
 }
 
@@ -249,17 +331,7 @@ resource "azurerm_cosmosdb_account" "cosmos_account" {
   }
 }
 
-resource "azurerm_private_dns_zone" "dns_zone" {
-  name                = "privatelink.documents.azure.com"
-  resource_group_name = azurerm_resource_group.az_rg.name
-}
 
-resource "azurerm_private_dns_zone_virtual_network_link" "cosmos_dns_link_2" {
-  name                  = local.caf_name.cosmos_private_dns_vnet_link
-  resource_group_name   = azurerm_resource_group.az_rg.name
-  private_dns_zone_name = azurerm_private_dns_zone.dns_zone.name
-  virtual_network_id    = azurerm_virtual_network.vnet.id
-}
 
 resource "azurerm_private_endpoint" "cosmos_pe" {
   name                = "pe-cosmos-account"
@@ -276,7 +348,7 @@ resource "azurerm_private_endpoint" "cosmos_pe" {
 
   # Automatically registers the endpoint IP address inside your Private DNS Zone
   private_dns_zone_group {
-    name                 = "dns-group-cosmos"
+    name                 = local.caf_name.cosmos_private_dns_zone_group
     private_dns_zone_ids = [azurerm_private_dns_zone.dns_zone.id]
   }
 }
@@ -290,6 +362,28 @@ resource "azurerm_cognitive_account" "az_speech_account" {
   kind                = "SpeechServices"
   sku_name            = "S0"
 
+  # Speech services require generating a custom subdomain
+  custom_subdomain_name = "${local.caf_name.speech_account}-${random_string.foundry_subdomain_suffix.result}"
+
+}
+
+resource "azurerm_private_endpoint" "speech_pe" {
+  name                = local.caf_name.speech_private_endpoint
+  location            = azurerm_resource_group.az_rg.location
+  resource_group_name = azurerm_resource_group.az_rg.name
+  subnet_id           = azurerm_subnet.endpointsubnet.id
+
+  private_service_connection {
+    name                           = "psc-speech-${local.caf_base}"
+    private_connection_resource_id = azurerm_cognitive_account.az_speech_account.id
+    subresource_names              = ["account"]
+    is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = local.caf_name.speech_private_dns_zone_group
+    private_dns_zone_ids = [azurerm_private_dns_zone.cognitive_dns.id]
+  }
 }
 
 ############################################################################################################################################################################
@@ -307,4 +401,23 @@ resource "azurerm_search_service" "azure_search_service" {
   partition_count               = 1
   public_network_access_enabled = true
 
+}
+
+resource "azurerm_private_endpoint" "search_pe" {
+  name                = local.caf_name.search_private_endpoint
+  location            = azurerm_resource_group.az_rg.location
+  resource_group_name = azurerm_resource_group.az_rg.name
+  subnet_id           = azurerm_subnet.endpointsubnet.id
+
+  private_service_connection {
+    name                           = "psc-srch-${local.caf_base}"
+    private_connection_resource_id = azurerm_search_service.azure_search_service.id
+    subresource_names              = ["searchService"]
+    is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = local.caf_name.search_private_dns_zone_group
+    private_dns_zone_ids = [azurerm_private_dns_zone.search_dns.id]
+  }
 }
