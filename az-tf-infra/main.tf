@@ -8,24 +8,24 @@ locals {
   caf_base = lower(join("-", [var.workload_name, var.environment, var.location_short, var.instance]))
 
   caf_name = {
-    rg                         = "rg-${local.caf_base}"
-    vnet                       = "vnet-${local.caf_base}"
-    subnet_integration         = "snet-int-${local.caf_base}"
-    subnet_private_endpoints   = "snet-pep-${local.caf_base}"
-    private_dns_vnet_link      = "vnetlnk-appsvc-${local.caf_base}"
+    rg                           = "rg-${local.caf_base}"
+    vnet                         = "vnet-${local.caf_base}"
+    subnet_integration           = "snet-int-${local.caf_base}"
+    subnet_private_endpoints     = "snet-pep-${local.caf_base}"
+    private_dns_vnet_link        = "vnetlnk-appsvc-${local.caf_base}"
     cosmos_private_dns_vnet_link = "vnetlnk-cosmos-${local.caf_base}"
-    ai_account                 = "ais-${local.caf_base}"
-    ai_project                 = "aip-${local.caf_base}"
-    ai_deployment              = "aidep-gpt52-${var.environment}"
-    frontend_web_app           = "appfe-${local.caf_base}"
-    backend_web_app            = "appbe-${local.caf_base}"
-    backend_private_endpoint   = "pep-appbe-${local.caf_base}"
-    private_dns_zone_group     = "pdzg-appsvc-${local.caf_base}"
-    private_service_connection = "psc-appbe-${local.caf_base}"
-    storaccount                = substr(replace("st${local.caf_base}", "-", ""), 0, 24)
-    cosmos_account             = "cosmos-${local.caf_base}"
-    speech_account             = "speech-${local.caf_base}"
-    search_service             = "srch-${local.caf_base}"
+    ai_account                   = "ais-${local.caf_base}"
+    ai_project                   = "aip-${local.caf_base}"
+    ai_deployment                = "aidep-gpt52-${var.environment}"
+    frontend_web_app             = "appfe-${local.caf_base}"
+    backend_web_app              = "appbe-${local.caf_base}"
+    backend_private_endpoint     = "pep-appbe-${local.caf_base}"
+    private_dns_zone_group       = "pdzg-appsvc-${local.caf_base}"
+    private_service_connection   = "psc-appbe-${local.caf_base}"
+    storaccount                  = substr(replace("st${local.caf_base}", "-", ""), 0, 24)
+    cosmos_account               = "cosmos-${local.caf_base}"
+    speech_account               = "speech-${local.caf_base}"
+    search_service               = "srch-${local.caf_base}"
   }
 }
 
@@ -41,7 +41,7 @@ resource "azurerm_resource_group" "az_rg" {
 # Azure Virtual Network and Subnet
 resource "azurerm_virtual_network" "vnet" {
   name                = local.caf_name.vnet
-  address_space       = ["10.10.0.0/16"]
+  address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.az_rg.location
   resource_group_name = azurerm_resource_group.az_rg.name
 }
@@ -289,7 +289,7 @@ resource "azurerm_cognitive_account" "az_speech_account" {
   resource_group_name = azurerm_resource_group.az_rg.name
   kind                = "SpeechServices"
   sku_name            = "S0"
-  
+
 }
 
 ############################################################################################################################################################################
@@ -303,8 +303,8 @@ resource "azurerm_search_service" "azure_search_service" {
   sku                 = "standard"
 
   # Optional Configurations
-  replica_count = 1
-  partition_count = 1
+  replica_count                 = 1
+  partition_count               = 1
   public_network_access_enabled = true
 
 }
